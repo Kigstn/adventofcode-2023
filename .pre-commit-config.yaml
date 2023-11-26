@@ -1,0 +1,19 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+repos:
+  # Run the Ruff formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.5
+    hooks:
+      - id: ruff-format
+        args: [ --preview ]
+        types_or: [python, pyi, jupyter]
+
+  # Run the Ruff linter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.5
+    hooks:
+      - id: ruff
+        args: [ --preview, --fix  ]
+        types_or: [python, pyi, jupyter]
