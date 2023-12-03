@@ -4,7 +4,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, BeforeValidator
 
-from helpers import read_from_input_file
+from helpers import readlines_from_input_file
 
 
 def _converter(x: list[str]) -> int:
@@ -57,6 +57,6 @@ def run_game_2(texts: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    texts = read_from_input_file(Path("input.txt"))
+    texts = readlines_from_input_file(Path("input.txt"))
     print(f"Puzzle 1 Solution: `{run_game_1(texts, red=12, green=13, blue=14)}`")
     print(f"Puzzle 2 Solution: `{run_game_2(texts)}`")

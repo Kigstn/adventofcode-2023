@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 
-from helpers import read_from_input_file
+from helpers import readlines_from_input_file
 
 
 def get_numbers(text: str) -> tuple[int, int]:
@@ -37,5 +37,5 @@ def run(texts: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    texts = read_from_input_file(Path("input.txt"))
+    texts = readlines_from_input_file(Path("input.txt"))
     print(f"Puzzle Solution: `{run(texts)}`")
