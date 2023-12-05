@@ -1,5 +1,7 @@
 import re
+from multiprocessing import Pool
 from pathlib import Path
+from typing import Optional
 
 import numpy
 from pydantic import BaseModel
@@ -39,37 +41,67 @@ def get_instance(input_value: int, map_inst: list[Map]) -> int:
     return input_value
 
 
-def run_game(texts: list[str], seeds: list[int]) -> int:
+def calc_seeds(seeds: numpy.array, maps: dict) -> Optional[dict]:
     map_seed_to_location: dict[int, int] = {}
 
-    for i, text in enumerate(texts):
-        if "seed-to-soil map" in text:
-            map_seed_to_soil = get_entries(texts[i + 1 :])
-        elif "soil-to-fertilizer" in text:
-            map_soil_to_fertilizer = get_entries(texts[i + 1 :])
-        elif "fertilizer-to-water" in text:
-            map_fertilizer_to_water = get_entries(texts[i + 1 :])
-        elif "water-to-light map" in text:
-            map_water_to_light = get_entries(texts[i + 1 :])
-        elif "light-to-temperature map" in text:
-            map_light_to_temperature = get_entries(texts[i + 1 :])
-        elif "temperature-to-humidity map" in text:
-            map_temperature_to_humidity = get_entries(texts[i + 1 :])
-        elif "humidity-to-location map" in text:
-            map_humidity_to_location = get_entries(texts[i + 1 :])
-
     for seed in seeds:
-        soil = get_instance(seed, map_seed_to_soil)  # noqa
-        fertilizer = get_instance(soil, map_soil_to_fertilizer)  # noqa
-        water = get_instance(fertilizer, map_fertilizer_to_water)  # noqa
-        light = get_instance(water, map_water_to_light)  # noqa
-        temperature = get_instance(light, map_light_to_temperature)  # noqa
-        humidity = get_instance(temperature, map_temperature_to_humidity)  # noqa
-        location = get_instance(humidity, map_humidity_to_location)  # noqa
+        soil = get_instance(seed, maps["map_seed_to_soil"])  # noqa
+        fertilizer = get_instance(soil, maps["map_soil_to_fertilizer"])  # noqa
+        water = get_instance(fertilizer, maps["map_fertilizer_to_water"])  # noqa
+        light = get_instance(water, maps["map_water_to_light"])  # noqa
+        temperature = get_instance(light, maps["map_light_to_temperature"])  # noqa
+        humidity = get_instance(temperature, maps["map_temperature_to_humidity"])  # noqa
+        location = get_instance(humidity, maps["map_humidity_to_location"])  # noqa
 
         map_seed_to_location[seed] = location
 
-    return min(map_seed_to_location.values())
+    return map_seed_to_location
+
+
+def run_game(texts: list[str], seeds: numpy.array) -> int:
+    maps = {}
+    for i, text in enumerate(texts):
+        if "seed-to-soil map" in text:
+            maps["map_seed_to_soil"] = get_entries(texts[i + 1 :])
+        elif "soil-to-fertilizer" in text:
+            maps["map_soil_to_fertilizer"] = get_entries(texts[i + 1 :])
+        elif "fertilizer-to-water" in text:
+            maps["map_fertilizer_to_water"] = get_entries(texts[i + 1 :])
+        elif "water-to-light map" in text:
+            maps["map_water_to_light"] = get_entries(texts[i + 1 :])
+        elif "light-to-temperature map" in text:
+            maps["map_light_to_temperature"] = get_entries(texts[i + 1 :])
+        elif "temperature-to-humidity map" in text:
+            maps["map_temperature_to_humidity"] = get_entries(texts[i + 1 :])
+        elif "humidity-to-location map" in text:
+            maps["map_humidity_to_location"] = get_entries(texts[i + 1 :])
+
+    print(f"Total: {len(seeds):_} seeds")
+    res = []
+    with Pool() as p:
+        total_count = 10000
+        split = numpy.array_split(seeds, total_count)
+        for s in split:
+            if s.size > 0:
+                r = p.apply_async(
+                    calc_seeds,
+                    (
+                        s,
+                        maps,
+                    ),
+                )
+                res.append(r)
+
+        count = 0
+        res2 = []
+        for r in res:
+            res2.append(r.get(timeout=None))
+            count += 1
+            print(f"Done with {count}/{total_count}")
+
+    mins = [min(r.values()) for r in res2]
+
+    return min(mins)
 
 
 def run_game_1(text: str) -> int:
@@ -77,7 +109,7 @@ def run_game_1(text: str) -> int:
 
     seeds = [int(x.strip()) for x in texts[0].split(":")[1].split()]
 
-    return run_game(texts[1:], seeds)
+    return run_game(texts[1:], numpy.array(seeds))
 
 
 def run_game_2(text: str) -> int:
