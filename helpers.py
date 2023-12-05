@@ -12,5 +12,10 @@ def readlines_from_input_file(path: Path) -> list[str]:
 
 
 def split_and_strip_input(text: str) -> list[str]:
+    return strip_input(text).split("\n")
+
+
+def strip_input(text: str) -> str:
     texts = text.split("\n")
-    return [t.strip() for t in texts if t.strip()]
+    cleaned = [t.strip() for t in texts if t.strip()]
+    return "\n".join(cleaned)
